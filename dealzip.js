@@ -21,7 +21,10 @@ async function readAllFilenames(directoryPath) {
         const fileNameWithFullPath = directoryPath + "/" + file;
         const country = filename.split("-")[0];
         const port = filename.split("-")[2];
-        const cmd = `shell/CloudflareST -f ${fileNameWithFullPath} -o speedtestresult/${filename}.csv -tp ${port} -url https://cdn.cloudflare.steamstatic.com/steam/apps/256843155/movie_max.mp4`;
+        if (port != 443) {
+            continue;
+        }
+        const cmd = `shell/CloudflareST -f ${fileNameWithFullPath} -o speedtestresult/${filename}.csv -tp ${port} -url https://cloudflare.cdn.openbsd.org/pub/OpenBSD/7.3/src.tar.gz -sl 5`;
         console.log(cmd);
 
         try {
