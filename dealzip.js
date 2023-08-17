@@ -1,31 +1,58 @@
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { execSync } = require('child_process');
 
-//https://zip.baipiao.eu.org/
-function readAllFilenames(directoryPath) {
-    // 读取目录内容
-    fs.readdir(directoryPath, (err, files) => {
-        if (err) {
-            console.error('读取目录出错: ', err);
-            return;
+// https://zip.baipiao.eu.org/
+async function readAllFilenames(directoryPath) {
+    const files = fs.readdirSync(directoryPath);
+
+    for (const file of files) {
+        const filePath = path.join(directoryPath, file);
+        const fileLines = await countLines(filePath);
+        console.log(`文件 ${filePath} 的行数为: ${fileLines}`);
+
+        // 在这里添加条件语句以判断是否跳过文件
+        if (fileLines < 10) {
+            continue;
         }
 
-        // 遍历每个文件名并输出
-        files.forEach((file) => {
-            const filename = path.basename(file,path.extname(file))
-            const fileNameWithFullPath = directoryPath+"/"+file;
-            const country = filename.split("-")[0]
-            const port = filename.split("-")[2]
-            const cmd = `shell/CloudflareST -f ${fileNameWithFullPath} -o speedtestresult/${filename}.csv -tp ${port}`;
-            console.log(cmd)
+        const filename = path.basename(file, path.extname(file));
+        const fileNameWithFullPath = directoryPath + "/" + file;
+        const country = filename.split("-")[0];
+        const port = filename.split("-")[2];
+        const cmd = `shell/CloudflareST -f ${fileNameWithFullPath} -o speedtestresult/${filename}.csv -tp ${port} -url https://cdn.cloudflare.steamstatic.com/steam/apps/256843155/movie_max.mp4`;
+        console.log(cmd);
 
-            try {
-                const output = execSync(cmd);
-                console.log(output.toString()); // 命令的输出
-            } catch (error) {
-                console.error(`执行命令时发生错误: ${error}`);
-            }
+        try {
+            const output = execSync(cmd);
+            console.log(`${filename}处理完成`);
+        } catch (error) {
+            console.error(`执行命令时发生错误: ${error}`);
+        }
+    }
+}
+
+// 统计文件行数并返回 Promise 对象
+function countLines(filePath) {
+    return new Promise((resolve, reject) => {
+        const fileStream = fs.createReadStream(filePath);
+        const rl = readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        });
+
+        let lineCount = 0;
+        rl.on('line', line => {
+            lineCount++;
+        });
+
+        rl.on('close', () => {
+            resolve(lineCount);
+        });
+
+        fileStream.on('error', error => {
+            reject(error);
         });
     });
 }
